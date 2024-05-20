@@ -1,8 +1,26 @@
 [package]
 name = "domain_gift_contract"
 version = "0.1.0"
-edition = "2023_11"
-
-# See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
 
 [dependencies]
+starknet = "2.6.3"
+openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", rev = "0697004db74502ce49900edef37331dd03531356" }
+naming = { git = "https://github.com/starknet-id/naming.git", rev = "02d547b02aca918a51e3cdd9635989ac0af4cedf"}
+storage_read = { git = "https://github.com/starknet-id/storage_read_component.git", rev = "6440184cc078188d1efeab1283d1698738cde435" }
+
+[dev-dependencies]
+identity = { git = "https://github.com/starknet-id/identity.git", rev = "5ae7fafdd20abf4b1e789b83af5db7e23ad39a7c" }
+
+[[target.starknet-contract]]
+# Enable Sierra codegen.
+sierra = true
+
+# Enable CASM codegen.
+casm = true
+
+# Emit Python-powered hints in order to run compiled CASM class with legacy Cairo VM.
+casm-add-pythonic-hints = true
+
+[lib]
+sierra = true
+casm = false
