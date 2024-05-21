@@ -28,7 +28,12 @@ fn test_domain_gift() {
     domain_gift.enable();
 
     // claim domain
-    domain_gift.get_domain_gift(1, 33133781693);
+    let sig = (
+        1656235970515422137623518348033034423290400412873214899648105454205007418873,
+        2792440294804924771913913656093129334725425963703426390447354149337645008208
+    );
+    let coupon_code = 123;
+    domain_gift.get_free_domain(1, 404683926, sig, coupon_code, 0);
 
     // ensure domain contract balance is 0
     let balance = erc20.balanceOf(domain_gift.contract_address);
@@ -37,7 +42,7 @@ fn test_domain_gift() {
 
 #[test]
 #[available_gas(2000000000)]
-#[should_panic(expected: ('Gift already claimed', 'ENTRYPOINT_FAILED'))]
+#[should_panic(expected: ('Coupon already claimed', 'ENTRYPOINT_FAILED'))]
 fn test_domain_gift_claim_twice() {
     let (erc20, domain_gift, pricing) = deploy_contracts();
     let admin = contract_address_const::<0x123>();
@@ -51,16 +56,21 @@ fn test_domain_gift_claim_twice() {
     domain_gift.enable();
 
     // claim domain
-    domain_gift.get_domain_gift(1, 33133781693);
+    let sig = (
+        1656235970515422137623518348033034423290400412873214899648105454205007418873,
+        2792440294804924771913913656093129334725425963703426390447354149337645008208
+    );
+    let coupon_code = 123;
+    domain_gift.get_free_domain(1, 404683926, sig, coupon_code, 0);
 
     // claim a second time
-    domain_gift.get_domain_gift(2, 19113425307);
+    domain_gift.get_free_domain(1, 404683926, sig, coupon_code, 0);
 }
 
 #[test]
 #[available_gas(2000000000)]
-#[should_panic(expected: ('Domain too short', 'ENTRYPOINT_FAILED'))]
-fn test_domain_gift_short_domain() {
+#[should_panic(expected: ('Invalid signature', 'ENTRYPOINT_FAILED'))]
+fn test_try_another_domain() {
     let (erc20, domain_gift, pricing) = deploy_contracts();
     let admin = contract_address_const::<0x123>();
     set_contract_address(admin);
@@ -73,7 +83,12 @@ fn test_domain_gift_short_domain() {
     domain_gift.enable();
 
     // claim domain
-    domain_gift.get_domain_gift(1, 27);
+    let sig = (
+        1656235970515422137623518348033034423290400412873214899648105454205007418873,
+        2792440294804924771913913656093129334725425963703426390447354149337645008208
+    );
+    let coupon_code = 123;
+    domain_gift.get_free_domain(1, 27, sig, coupon_code, 0);
 }
 
 #[test]
@@ -92,7 +107,12 @@ fn test_insufficient_balance() {
     domain_gift.enable();
 
     // claim domain but domain gift contract has no balance
-    domain_gift.get_domain_gift(1, 33133781693);
+    let sig = (
+        1656235970515422137623518348033034423290400412873214899648105454205007418873,
+        2792440294804924771913913656093129334725425963703426390447354149337645008208
+    );
+    let coupon_code = 123;
+    domain_gift.get_free_domain(1, 404683926, sig, coupon_code, 0);
 }
 
 #[test]
@@ -113,7 +133,13 @@ fn test_domain_gift_disabled() {
     // enable contract
     domain_gift.disable();
 
-    domain_gift.get_domain_gift(1, 33133781693);
+    // claim domain but domain gift contract has no balance
+    let sig = (
+        1656235970515422137623518348033034423290400412873214899648105454205007418873,
+        2792440294804924771913913656093129334725425963703426390447354149337645008208
+    );
+    let coupon_code = 123;
+    domain_gift.get_free_domain(1, 404683926, sig, coupon_code, 0);
 }
 
 #[test]
@@ -163,5 +189,3 @@ fn test_withdraw_not_admin() {
     set_contract_address(user);
     domain_gift.withdraw(erc20.contract_address, user);
 }
-
-

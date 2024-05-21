@@ -3,7 +3,14 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 trait IDomainGift<TContractState> {
-    fn get_domain_gift(ref self: TContractState, id: u128, domain: felt252);
+    fn get_free_domain(
+        ref self: TContractState,
+        id: u128,
+        domain: felt252,
+        sig: (felt252, felt252),
+        coupon_code: felt252,
+        metadata: felt252
+    );
 
     // admin functions
     fn enable(ref self: TContractState);
@@ -20,6 +27,7 @@ mod DomainGift {
     };
     use starknet::class_hash::ClassHash;
     use integer::{u256_safe_divmod, u256_as_non_zero};
+    use ecdsa::check_ecdsa_signature;
     use storage_read::{main::storage_read_component, interface::IStorageRead};
     use naming::interface::{
         naming::{INaming, INamingDispatcher, INamingDispatcherTrait},
@@ -48,9 +56,9 @@ mod DomainGift {
         naming_contract: ContractAddress,
         erc20_contract: ContractAddress,
         pricing_contract: ContractAddress,
-        server_pub_key: felt252,
+        public_key: felt252,
         is_enabled: bool,
-        blacklisted_addr: LegacyMap<ContractAddress, bool>,
+        blacklisted_seeds: LegacyMap<felt252, bool>,
         #[substorage(v0)]
         storage_read: storage_read_component::Storage,
         #[substorage(v0)]
@@ -83,6 +91,7 @@ mod DomainGift {
         domain: felt252,
         #[key]
         owner: ContractAddress,
+        coupon_code: felt252
     }
 
     #[constructor]
@@ -92,23 +101,42 @@ mod DomainGift {
         naming_addr: ContractAddress,
         erc20_addr: ContractAddress,
         pricing_addr: ContractAddress,
+        server_public_key: felt252
     ) {
         self.ownable.initializer(admin_addr);
         self.naming_contract.write(naming_addr);
         self.erc20_contract.write(erc20_addr);
         self.pricing_contract.write(pricing_addr);
+        self.public_key.write(server_public_key);
     }
 
     #[abi(embed_v0)]
     impl DomainGiftImpl of super::IDomainGift<ContractState> {
-        fn get_domain_gift(ref self: ContractState, id: u128, domain: felt252) {
+        fn get_free_domain(
+            ref self: ContractState,
+            id: u128,
+            domain: felt252,
+            sig: (felt252, felt252),
+            coupon_code: felt252,
+            metadata: felt252
+        ) {
             assert(self.is_enabled.read(), 'Contract is disabled');
 
-            let caller = get_caller_address();
-            assert(!self.blacklisted_addr.read(caller), 'Gift already claimed');
+            // check if sig is blacklisted 
+            let (sig_0, sig_1) = sig;
+            assert(!self.blacklisted_seeds.read(sig_0), 'Coupon already claimed');
+            // blacklist signature
+            self.blacklisted_seeds.write(sig_0, true);
 
-            // mark the user as blacklisted
-            self.blacklisted_addr.write(caller, true);
+            // verify signature
+            let caller = get_caller_address();
+            let message_hash: felt252 = hash::LegacyHash::hash(
+                hash::LegacyHash::hash(hash::LegacyHash::hash(caller.into(), domain), coupon_code),
+                'free domain registration'
+            );
+            let public_key = self.public_key.read();
+            let is_valid = check_ecdsa_signature(message_hash, public_key, sig_0, sig_1);
+            assert(is_valid, 'Invalid signature');
 
             // assert domain length
             let domain_len = self.get_chars_len(domain.into());
@@ -129,11 +157,11 @@ mod DomainGift {
                     contract_address_const::<0>(),
                     contract_address_const::<0>(),
                     0,
-                    0 // no metadata
+                    metadata
                 );
 
             // emit event 
-            self.emit(Event::DomainGift(DomainGift { id, domain, owner: caller }));
+            self.emit(Event::DomainGift(DomainGift { id, domain, owner: caller, coupon_code }));
         }
 
         // Admin functions

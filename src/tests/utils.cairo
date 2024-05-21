@@ -37,7 +37,14 @@ pub fn deploy_contracts() -> (IERC20CamelDispatcher, IDomainGiftDispatcher, IPri
     // naming
     let naming = deploy(Naming::TEST_CLASS_HASH, array![identity.into(), pricing.into(), 0, admin]);
     let domain_gift = deploy(
-        DomainGift::TEST_CLASS_HASH, array![admin, naming.into(), eth.into(), pricing.into()]
+        DomainGift::TEST_CLASS_HASH,
+        array![
+            admin,
+            naming.into(),
+            eth.into(),
+            pricing.into(),
+            0x29207854e61b420aba8fbbbfa95b12abfcdfb67881ba811ef39c30d3ae196e9
+        ]
     );
 
     (
