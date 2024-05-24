@@ -8,7 +8,6 @@ trait IDomainGift<TContractState> {
         id: u128,
         domain: felt252,
         sig: (felt252, felt252),
-        coupon_code: felt252,
         metadata: felt252
     );
 
@@ -91,7 +90,6 @@ mod DomainGift {
         domain: felt252,
         #[key]
         owner: ContractAddress,
-        coupon_code: felt252
     }
 
     #[constructor]
@@ -117,7 +115,6 @@ mod DomainGift {
             id: u128,
             domain: felt252,
             sig: (felt252, felt252),
-            coupon_code: felt252,
             metadata: felt252
         ) {
             assert(self.is_enabled.read(), 'Contract is disabled');
@@ -131,8 +128,7 @@ mod DomainGift {
             // verify signature
             let caller = get_caller_address();
             let message_hash: felt252 = hash::LegacyHash::hash(
-                hash::LegacyHash::hash(hash::LegacyHash::hash(caller.into(), domain), coupon_code),
-                'free domain registration'
+                caller.into(), 'free domain registration'
             );
             let public_key = self.public_key.read();
             let is_valid = check_ecdsa_signature(message_hash, public_key, sig_0, sig_1);
@@ -161,7 +157,7 @@ mod DomainGift {
                 );
 
             // emit event 
-            self.emit(Event::DomainGift(DomainGift { id, domain, owner: caller, coupon_code }));
+            self.emit(Event::DomainGift(DomainGift { id, domain, owner: caller }));
         }
 
         // Admin functions
