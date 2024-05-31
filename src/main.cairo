@@ -14,9 +14,7 @@ trait IDomainGift<TContractState> {
     // admin functions
     fn enable(ref self: TContractState);
     fn disable(ref self: TContractState);
-    fn withdraw(
-        ref self: TContractState, erc20_addr: ContractAddress, target_addr: ContractAddress
-    );
+    fn withdraw(ref self: TContractState, erc20_addr: ContractAddress);
 }
 
 #[starknet::contract]
@@ -54,7 +52,6 @@ mod DomainGift {
     struct Storage {
         naming_contract: ContractAddress,
         erc20_contract: ContractAddress,
-        pricing_contract: ContractAddress,
         public_key: felt252,
         is_enabled: bool,
         blacklisted_seeds: LegacyMap<felt252, bool>,
@@ -98,14 +95,14 @@ mod DomainGift {
         admin_addr: ContractAddress,
         naming_addr: ContractAddress,
         erc20_addr: ContractAddress,
-        pricing_addr: ContractAddress,
         server_public_key: felt252
     ) {
         self.ownable.initializer(admin_addr);
         self.naming_contract.write(naming_addr);
         self.erc20_contract.write(erc20_addr);
-        self.pricing_contract.write(pricing_addr);
         self.public_key.write(server_public_key);
+        // infinite approval of the naming contract
+        IERC20CamelDispatcher { contract_address: erc20_addr }.approve(naming_addr, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
     }
 
     #[abi(embed_v0)]
@@ -140,11 +137,6 @@ mod DomainGift {
 
             // buy the domain for the user
             let naming = self.naming_contract.read();
-            let (_, price) = IPricingDispatcher { contract_address: self.pricing_contract.read() }
-                .compute_buy_price(domain_len, 90);
-
-            IERC20CamelDispatcher { contract_address: self.erc20_contract.read() }
-                .approve(naming, price);
             INamingDispatcher { contract_address: naming }
                 .buy(
                     id,
@@ -172,12 +164,12 @@ mod DomainGift {
         }
 
         fn withdraw(
-            ref self: ContractState, erc20_addr: ContractAddress, target_addr: ContractAddress
+            ref self: ContractState, erc20_addr: ContractAddress
         ) {
             self.ownable.assert_only_owner();
             let balance = IERC20CamelDispatcher { contract_address: erc20_addr }
                 .balanceOf(get_contract_address());
-            IERC20CamelDispatcher { contract_address: erc20_addr }.transfer(target_addr, balance);
+            IERC20CamelDispatcher { contract_address: erc20_addr }.transfer(get_caller_address(), balance);
         }
     }
 

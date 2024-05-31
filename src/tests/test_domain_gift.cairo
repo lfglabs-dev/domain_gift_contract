@@ -162,7 +162,7 @@ fn test_withdraw() {
     erc20.transfer(domain_gift.contract_address, 1000);
 
     // withdraw all funds
-    domain_gift.withdraw(erc20.contract_address, admin);
+    domain_gift.withdraw(erc20.contract_address);
 
     assert(erc20.balanceOf(domain_gift.contract_address) == 0, 'Contract balance should be 0');
     assert(erc20.balanceOf(admin) == initial_balance, 'Contract balance should be 0');
@@ -182,5 +182,5 @@ fn test_withdraw_not_admin() {
 
     // try withdrawing all funds
     set_contract_address(user);
-    domain_gift.withdraw(erc20.contract_address, user);
+    domain_gift.withdraw(erc20.contract_address);
 }

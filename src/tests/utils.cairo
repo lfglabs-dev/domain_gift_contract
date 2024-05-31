@@ -26,7 +26,7 @@ fn deploy(contract_class_hash: felt252, calldata: Array<felt252>) -> ContractAdd
     address
 }
 
-pub fn deploy_contracts() -> (IERC20CamelDispatcher, IDomainGiftDispatcher, IPricingDispatcher) {
+fn deploy_contracts() -> (IERC20CamelDispatcher, IDomainGiftDispatcher, IPricingDispatcher) {
     let admin = 0x123;
     //erc20
     let eth = deploy(ERC20::TEST_CLASS_HASH, array![]);
@@ -42,7 +42,6 @@ pub fn deploy_contracts() -> (IERC20CamelDispatcher, IDomainGiftDispatcher, IPri
             admin,
             naming.into(),
             eth.into(),
-            pricing.into(),
             0x29207854e61b420aba8fbbbfa95b12abfcdfb67881ba811ef39c30d3ae196e9
         ]
     );
